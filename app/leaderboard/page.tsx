@@ -136,10 +136,18 @@ function LeaderboardContent() {
 
   // Hide Farcaster Mini App splash screen when ready
   useEffect(() => {
-    if (sdk) {
-      sdk.actions.ready(); // Notifies Farcaster host to hide splash
+    // Call ready as soon as the component mounts to hide splash screen
+    try {
+      if (sdk && sdk.actions && sdk.actions.ready) {
+        sdk.actions.ready(); // Notifies Farcaster host to hide splash
+        console.log("Farcaster Mini App ready() called successfully");
+      } else {
+        console.warn("Farcaster SDK not ready yet");
+      }
+    } catch (error) {
+      console.error("Error calling Farcaster SDK ready():", error);
     }
-  }, [sdk]);
+  }, []); // Remove sdk dependency to call immediately
 
   // Live countdown effect
   useEffect(() => {
@@ -653,10 +661,29 @@ function LeaderboardContent() {
 export default function LeaderboardPage() {
   // Hide Farcaster Mini App splash screen when ready
   useEffect(() => {
-    if (sdk) {
-      sdk.actions.ready(); // Notifies Farcaster host to hide splash
-    }
-  }, [sdk]);
+    // Call ready as soon as possible to hide splash screen
+    const callReady = () => {
+      try {
+        if (sdk && sdk.actions && sdk.actions.ready) {
+          sdk.actions.ready(); // Notifies Farcaster host to hide splash
+          console.log("Farcaster Mini App ready() called from main component");
+        } else {
+          // If SDK not ready, try again after a short delay
+          setTimeout(callReady, 100);
+        }
+      } catch (error) {
+        console.error("Error calling Farcaster SDK ready() from main component:", error);
+      }
+    };
+
+    // Call immediately
+    callReady();
+
+    // Also try after a short delay to ensure SDK is loaded
+    const timeoutId = setTimeout(callReady, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, []); // Empty dependency array to run only once
 
   return (
     <PageContainer noPadding>
