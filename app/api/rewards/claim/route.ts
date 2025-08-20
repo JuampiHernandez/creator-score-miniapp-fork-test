@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { RewardsClaimService } from "@/app/services/rewardsClaimService";
-import { getUserContext } from "@/lib/user-context";
-import { useMiniKit } from "@coinbase/onchainkit/minikit";
 
 export async function POST(request: NextRequest) {
   try {

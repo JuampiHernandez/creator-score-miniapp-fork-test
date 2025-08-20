@@ -10,7 +10,7 @@ export interface RewardClaim {
   claimed_at: string;
   transaction_hash?: string;
   status: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   created_at: string;
 }
 
