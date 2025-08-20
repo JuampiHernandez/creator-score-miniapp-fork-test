@@ -201,7 +201,7 @@ function LeaderboardContent() {
     if (!callReady()) {
       // If not ready, retry with increasing delays
       const delays = [100, 200, 500, 1000, 2000];
-      delays.forEach((delay, index) => {
+      delays.forEach((delay) => {
         setTimeout(() => {
           if (callReady()) {
             console.log(`Farcaster SDK ready() called successfully after ${delay}ms delay`);
@@ -737,7 +737,7 @@ export default function LeaderboardPage() {
     if (!callReady()) {
       // If not ready, retry with increasing delays
       const delays = [100, 200, 500, 1000, 2000];
-      delays.forEach((delay, index) => {
+      delays.forEach((delay) => {
         setTimeout(() => {
           if (callReady()) {
             console.log(`Farcaster SDK ready() called successfully after ${delay}ms delay`);
