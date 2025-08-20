@@ -69,7 +69,22 @@ declare global {
 const callFarcasterReady = () => {
   try {
     // Check if we're in a Farcaster Mini App context
-    if (typeof window !== 'undefined' && window.location.href.includes('farcaster')) {
+    // Look for multiple indicators of Farcaster context
+    const isFarcasterContext = 
+      typeof window !== 'undefined' && (
+        window.location.href.includes('farcaster') ||
+        window.location.href.includes('warpcast') ||
+        window.location.href.includes('mini-app') ||
+        window.location.href.includes('miniapp') ||
+        // Check if we're in an iframe (common for Mini Apps)
+        window.self !== window.top ||
+        // Check for Farcaster-specific environment
+        process.env.NODE_ENV === 'production' ||
+        // Always try in production builds
+        true
+      );
+
+    if (isFarcasterContext) {
       // Try multiple ways to access the SDK
       if (sdk && sdk.actions && typeof sdk.actions.ready === 'function') {
         sdk.actions.ready();
@@ -89,6 +104,16 @@ const callFarcasterReady = () => {
         window.farcaster.ready();
         console.log("Farcaster Mini App ready() called successfully via direct function");
         return true;
+      }
+
+      // Try to access the SDK from the global scope
+      if (typeof window !== 'undefined' && (window as any).farcasterSDK) {
+        const globalSDK = (window as any).farcasterSDK;
+        if (globalSDK.actions && typeof globalSDK.actions.ready === 'function') {
+          globalSDK.actions.ready();
+          console.log("Farcaster Mini App ready() called successfully via global SDK");
+          return true;
+        }
       }
     }
     
@@ -208,6 +233,22 @@ function LeaderboardContent() {
           }
         }, delay);
       });
+
+      // Also try continuously every 500ms for up to 10 seconds
+      let attempts = 0;
+      const maxAttempts = 20; // 10 seconds total
+      const interval = setInterval(() => {
+        attempts++;
+        if (callReady()) {
+          console.log(`Farcaster SDK ready() called successfully after ${attempts * 500}ms of continuous trying`);
+          clearInterval(interval);
+        } else if (attempts >= maxAttempts) {
+          console.warn("Giving up on calling Farcaster ready() after 10 seconds");
+          clearInterval(interval);
+        }
+      }, 500);
+
+      return () => clearInterval(interval);
     }
   }, []); // Empty dependency array to run only once
 
@@ -723,9 +764,14 @@ function LeaderboardContent() {
 export default function LeaderboardPage() {
   // Hide Farcaster Mini App splash screen when ready
   useEffect(() => {
+    let readyCalled = false;
+    
     // Call ready as soon as possible to hide splash screen
     const callReady = () => {
+      if (readyCalled) return true;
+      
       if (callFarcasterReady()) {
+        readyCalled = true;
         return true;
       }
       
@@ -744,8 +790,41 @@ export default function LeaderboardPage() {
           }
         }, delay);
       });
+
+      // Also try continuously every 500ms for up to 10 seconds
+      let attempts = 0;
+      const maxAttempts = 20; // 10 seconds total
+      const interval = setInterval(() => {
+        attempts++;
+        if (callReady()) {
+          console.log(`Farcaster SDK ready() called successfully after ${attempts * 500}ms of continuous trying`);
+          clearInterval(interval);
+        } else if (attempts >= maxAttempts) {
+          console.warn("Giving up on calling Farcaster ready() after 10 seconds");
+          clearInterval(interval);
+        }
+      }, 500);
+
+      return () => clearInterval(interval);
     }
   }, []); // Empty dependency array to run only once
+
+  // Additional effect to try calling ready() on every render for the first few seconds
+  const [renderCount, setRenderCount] = useState(0);
+  useEffect(() => {
+    if (renderCount < 10) { // Only try for first 10 renders
+      setRenderCount(prev => prev + 1);
+      
+      // Try to call ready on every render
+      const timer = setTimeout(() => {
+        if (callFarcasterReady()) {
+          console.log(`Farcaster SDK ready() called successfully on render ${renderCount + 1}`);
+        }
+      }, 50); // Small delay to ensure component is fully rendered
+      
+      return () => clearTimeout(timer);
+    }
+  }, [renderCount]);
 
   return (
     <PageContainer noPadding>
