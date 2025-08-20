@@ -46,8 +46,59 @@ import { PerkModal } from "@/components/modals/PerkModal";
 import { usePerkEntry } from "@/hooks/usePerkEntry";
 import { useUserCalloutPrefs } from "@/hooks/useUserCalloutPrefs";
 import { RewardsCalculationService } from "@/app/services/rewardsCalculationService";
-import sdk from "@farcaster/miniapp-sdk";
+
+// Import the SDK properly for Farcaster Mini Apps
+import { sdk } from "@farcaster/miniapp-sdk";
 import { ClaimRewardsButton } from "@/components/common/ClaimRewardsButton";
+
+// Extend Window interface for Farcaster Mini App
+declare global {
+  interface Window {
+    farcaster?: {
+      sdk?: {
+        actions?: {
+          ready?: () => void;
+        };
+      };
+      ready?: () => void;
+    };
+  }
+}
+
+// Helper function to safely call ready
+const callFarcasterReady = () => {
+  try {
+    // Check if we're in a Farcaster Mini App context
+    if (typeof window !== 'undefined' && window.location.href.includes('farcaster')) {
+      // Try multiple ways to access the SDK
+      if (sdk && sdk.actions && typeof sdk.actions.ready === 'function') {
+        sdk.actions.ready();
+        console.log("Farcaster Mini App ready() called successfully via SDK import");
+        return true;
+      }
+      
+      // Try accessing via global object (fallback)
+      if (window.farcaster && window.farcaster.sdk && typeof window.farcaster.sdk.actions?.ready === 'function') {
+        window.farcaster.sdk.actions.ready();
+        console.log("Farcaster Mini App ready() called successfully via global object");
+        return true;
+      }
+      
+      // Try direct function call (another fallback)
+      if (typeof window.farcaster?.ready === 'function') {
+        window.farcaster.ready();
+        console.log("Farcaster Mini App ready() called successfully via direct function");
+        return true;
+      }
+    }
+    
+    console.warn("Not in Farcaster Mini App context or SDK not available");
+    return false;
+  } catch (error) {
+    console.error("Error calling Farcaster ready():", error);
+    return false;
+  }
+};
 
 function getCountdownParts(target: Date) {
   const nowUTC = Date.now();
@@ -137,17 +188,28 @@ function LeaderboardContent() {
   // Hide Farcaster Mini App splash screen when ready
   useEffect(() => {
     // Call ready as soon as the component mounts to hide splash screen
-    try {
-      if (sdk && sdk.actions && sdk.actions.ready) {
-        sdk.actions.ready(); // Notifies Farcaster host to hide splash
-        console.log("Farcaster Mini App ready() called successfully");
-      } else {
-        console.warn("Farcaster SDK not ready yet");
+    const callReady = () => {
+      if (callFarcasterReady()) {
+        return true;
       }
-    } catch (error) {
-      console.error("Error calling Farcaster SDK ready():", error);
+      
+      console.warn("Farcaster SDK not ready yet in LeaderboardContent");
+      return false;
+    };
+
+    // Try to call ready immediately
+    if (!callReady()) {
+      // If not ready, retry with increasing delays
+      const delays = [100, 200, 500, 1000, 2000];
+      delays.forEach((delay, index) => {
+        setTimeout(() => {
+          if (callReady()) {
+            console.log(`Farcaster SDK ready() called successfully after ${delay}ms delay`);
+          }
+        }, delay);
+      });
     }
-  }, []); // Remove sdk dependency to call immediately
+  }, []); // Empty dependency array to run only once
 
   // Live countdown effect
   useEffect(() => {
@@ -663,26 +725,26 @@ export default function LeaderboardPage() {
   useEffect(() => {
     // Call ready as soon as possible to hide splash screen
     const callReady = () => {
-      try {
-        if (sdk && sdk.actions && sdk.actions.ready) {
-          sdk.actions.ready(); // Notifies Farcaster host to hide splash
-          console.log("Farcaster Mini App ready() called from main component");
-        } else {
-          // If SDK not ready, try again after a short delay
-          setTimeout(callReady, 100);
-        }
-      } catch (error) {
-        console.error("Error calling Farcaster SDK ready() from main component:", error);
+      if (callFarcasterReady()) {
+        return true;
       }
+      
+      console.warn("Farcaster SDK not ready yet in main component");
+      return false;
     };
 
-    // Call immediately
-    callReady();
-
-    // Also try after a short delay to ensure SDK is loaded
-    const timeoutId = setTimeout(callReady, 500);
-
-    return () => clearTimeout(timeoutId);
+    // Try to call ready immediately
+    if (!callReady()) {
+      // If not ready, retry with increasing delays
+      const delays = [100, 200, 500, 1000, 2000];
+      delays.forEach((delay, index) => {
+        setTimeout(() => {
+          if (callReady()) {
+            console.log(`Farcaster SDK ready() called successfully after ${delay}ms delay`);
+          }
+        }, delay);
+      });
+    }
   }, []); // Empty dependency array to run only once
 
   return (
