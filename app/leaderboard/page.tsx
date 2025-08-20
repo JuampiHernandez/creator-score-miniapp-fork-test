@@ -5,7 +5,7 @@ import { TabNavigation } from "@/components/common/tabs-navigation";
 import { useMiniKit } from "@coinbase/onchainkit/minikit";
 import { getUserContext } from "@/lib/user-context";
 import { useFidToTalentUuid } from "@/hooks/useUserResolution";
-import { sdk } from "@farcaster/frame-sdk";
+
 import { useResolvedTalentProfile } from "@/hooks/useResolvedTalentProfile";
 import { useLeaderboardData } from "@/hooks/useLeaderboardOptimized";
 import {
@@ -46,6 +46,7 @@ import { PerkModal } from "@/components/modals/PerkModal";
 import { usePerkEntry } from "@/hooks/usePerkEntry";
 import { useUserCalloutPrefs } from "@/hooks/useUserCalloutPrefs";
 import { RewardsCalculationService } from "@/app/services/rewardsCalculationService";
+import sdk from "@farcaster/miniapp-sdk";
 
 function getCountdownParts(target: Date) {
   const nowUTC = Date.now();
@@ -134,8 +135,10 @@ function LeaderboardContent() {
 
   // Hide Farcaster Mini App splash screen when ready
   useEffect(() => {
-    sdk.actions.ready(); // Notifies Farcaster host to hide splash
-  }, []);
+    if (sdk) {
+      sdk.actions.ready(); // Notifies Farcaster host to hide splash
+    }
+  }, [sdk]);
 
   // Live countdown effect
   useEffect(() => {
@@ -638,6 +641,13 @@ function LeaderboardContent() {
 }
 
 export default function LeaderboardPage() {
+  // Hide Farcaster Mini App splash screen when ready
+  useEffect(() => {
+    if (sdk) {
+      sdk.actions.ready(); // Notifies Farcaster host to hide splash
+    }
+  }, [sdk]);
+
   return (
     <PageContainer noPadding>
       {/* Header section */}
