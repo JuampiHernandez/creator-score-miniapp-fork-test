@@ -37,7 +37,22 @@ CREATE TABLE IF NOT EXISTS notification_runs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-TRUNCATE TABLE user_preferences, perk_entries, notification_runs RESTART IDENTITY CASCADE;
+CREATE TABLE IF NOT EXISTS rewards_claims (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    user_id TEXT NOT NULL,
+    talent_uuid TEXT NOT NULL,
+    round_id TEXT NOT NULL,
+    amount_usd DECIMAL(10,2) NOT NULL,
+    amount_tokens DECIMAL(18,6) DEFAULT 0,
+    claimed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    transaction_hash TEXT,
+    status TEXT DEFAULT 'claimed',
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, round_id)
+);
+
+TRUNCATE TABLE user_preferences, perk_entries, notification_runs, rewards_claims RESTART IDENTITY CASCADE;
 
 INSERT INTO user_preferences (user_id, callout_prefs) 
 VALUES 
@@ -54,9 +69,15 @@ VALUES
     ('daily-rewards', 'completed', NOW()),
     ('weekly-leaderboard', 'completed', NOW());
 
+INSERT INTO rewards_claims (user_id, talent_uuid, round_id, amount_usd, amount_tokens, status)
+VALUES 
+    ('test-user-1', 'test-talent-1', 'round-1', 150.00, 150.0, 'claimed'),
+    ('test-user-2', 'test-talent-2', 'round-1', 75.50, 75.5, 'claimed');
+
 ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE perk_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_runs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rewards_claims ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "public can read user_preferences"
 ON public.user_preferences
@@ -73,6 +94,11 @@ ON public.notification_runs
 FOR SELECT TO anon
 USING (true);
 
+CREATE POLICY "public can read rewards_claims"
+ON public.rewards_claims
+FOR SELECT TO anon
+USING (true);
+
 CREATE POLICY "users can manage their own preferences"
 ON public.user_preferences
 FOR ALL TO authenticated
@@ -83,8 +109,18 @@ ON public.perk_entries
 FOR ALL TO authenticated
 USING (auth.uid()::text = user_id);
 
+CREATE POLICY "users can manage their own reward claims"
+ON public.rewards_claims
+FOR ALL TO authenticated
+USING (auth.uid()::text = user_id);
+
 CREATE POLICY "service role can manage notification runs"
 ON public.notification_runs
+FOR ALL TO service_role
+USING (true);
+
+CREATE POLICY "service role can manage reward claims"
+ON public.rewards_claims
 FOR ALL TO service_role
 USING (true);
 

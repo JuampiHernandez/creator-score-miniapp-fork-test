@@ -16,6 +16,7 @@ export interface CreatorItem {
   badge?: React.ReactNode; // Optional badge (e.g., rocket for boosted users)
   primaryMetricVariant?: "default" | "brand-purple" | "muted"; // New prop for styling variants
   isOptedOut?: boolean; // New prop for opt-out styling
+  claimButton?: React.ReactNode; // Optional claim button component
 }
 
 interface CreatorListProps {
@@ -82,11 +83,11 @@ export function CreatorList({
             <div key={item.id}>
               <div
                 className={cn(
-                  "flex items-center gap-3 p-3 transition-colors cursor-pointer hover:bg-muted active:bg-muted/80",
+                  "flex items-center gap-3 p-3 transition-colors",
                   pinnedIndex === index
                     ? "rounded-lg bg-muted hover:bg-muted/80 mb-2"
                     : "",
-                  onItemClick && "cursor-pointer",
+                  onItemClick && "cursor-pointer hover:bg-muted active:bg-muted/80",
                 )}
                 onClick={() => onItemClick?.(item)}
               >
@@ -137,6 +138,13 @@ export function CreatorList({
                         </span>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Claim button (optional) */}
+                {item.claimButton && (
+                  <div className="ml-4 min-w-[120px]" onClick={(e) => e.stopPropagation()}>
+                    {item.claimButton}
                   </div>
                 )}
               </div>

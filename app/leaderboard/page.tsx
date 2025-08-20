@@ -47,6 +47,7 @@ import { usePerkEntry } from "@/hooks/usePerkEntry";
 import { useUserCalloutPrefs } from "@/hooks/useUserCalloutPrefs";
 import { RewardsCalculationService } from "@/app/services/rewardsCalculationService";
 import sdk from "@farcaster/miniapp-sdk";
+import { ClaimRewardsButton } from "@/components/common/ClaimRewardsButton";
 
 function getCountdownParts(target: Date) {
   const nowUTC = Date.now();
@@ -522,6 +523,15 @@ function LeaderboardContent() {
                       ? "brand-purple"
                       : "default",
                   isOptedOut: isOptedOut,
+                  // Add claim button for authenticated users
+                  claimButton: isLoggedIn ? (
+                    <ClaimRewardsButton
+                      userId={user.id}
+                      talentUuid={typeof user.talent_protocol_id === 'string' ? user.talent_protocol_id : String(user.talent_protocol_id)}
+                      userScore={user.score}
+                      userRank={user.rank}
+                    />
+                  ) : undefined,
                   // Note: Crossed-out styling is handled by CreatorList component via isOptedOut prop
                   badge: isOptedOut ? (
                     // OptOut badge (green HandHeart) - takes precedence over boost
