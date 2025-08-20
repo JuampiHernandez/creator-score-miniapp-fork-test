@@ -107,12 +107,16 @@ const callFarcasterReady = () => {
       }
 
       // Try to access the SDK from the global scope
-      if (typeof window !== 'undefined' && (window as any).farcasterSDK) {
-        const globalSDK = (window as any).farcasterSDK;
-        if (globalSDK.actions && typeof globalSDK.actions.ready === 'function') {
-          globalSDK.actions.ready();
-          console.log("Farcaster Mini App ready() called successfully via global SDK");
-          return true;
+      if (typeof window !== 'undefined') {
+        const globalWindow = window as unknown as Record<string, unknown>;
+        if (globalWindow.farcasterSDK) {
+          const globalSDK = globalWindow.farcasterSDK as Record<string, unknown>;
+          const actions = globalSDK.actions as Record<string, unknown>;
+          if (actions && typeof actions.ready === 'function') {
+            (actions.ready as () => void)();
+            console.log("Farcaster Mini App ready() called successfully via global SDK");
+            return true;
+          }
         }
       }
     }
