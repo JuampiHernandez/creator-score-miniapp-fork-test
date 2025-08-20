@@ -2,6 +2,8 @@
 
 This is a fork of the Creator Score Mini App for testing purposes on Farcaster Mini App preview.
 
+<!-- Updated: ESLint errors fixed, rewards claiming system ready -->
+
 ## 🚀 Quick Deploy to Vercel
 
 1. **Fork this repository** to your GitHub account
